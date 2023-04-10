@@ -7,22 +7,26 @@ import (
 	"time"
 )
 
-// DateFormatter is an interface for a type that formats
-// a date in a variety of formats.
-type DateFormatter interface {
-	Short(time.Time) string
-	Medium(time.Time) string
-	Long(time.Time) string
-	Full(time.Time) string
+// DateTimeFormatter is an interface for a type that formats
+// a date/time in a variety of formats.
+type DateTimeFormatter interface {
+	ShortDate(time.Time) string
+	MediumDate(time.Time) string
+	LongDate(time.Time) string
+	FullDate(time.Time) string
+	ShortTime(time.Time) string
+	MediumTime(time.Time) string
+	LongTime(time.Time) string
+	FullTime(time.Time) string
 }
 
-type AmericanDateFormatter struct {
+type AmericanDateTimeFormatter struct {
 	Month   map[time.Month]string
 	Weekday map[time.Weekday]string
 }
 
-func createAmericanDateFormatter() DateFormatter {
-	return &AmericanDateFormatter{
+func createAmericanDateTimeFormatter() DateTimeFormatter {
+	return &AmericanDateTimeFormatter{
 		Month: map[time.Month]string{
 			time.January:   "January",
 			time.February:  "February",
@@ -50,32 +54,52 @@ func createAmericanDateFormatter() DateFormatter {
 }
 
 // 10/16/1996
-func (en *AmericanDateFormatter) Short(t time.Time) string {
+func (en *AmericanDateTimeFormatter) ShortDate(t time.Time) string {
 	return fmt.Sprintf("%d/%d/%d", t.Month(), t.Day(), t.Year())
 }
 
 // October 16, 1996
-func (en *AmericanDateFormatter) Medium(t time.Time) string {
+func (en *AmericanDateTimeFormatter) MediumDate(t time.Time) string {
 	return fmt.Sprintf("%s %d, %d", en.Month[t.Month()], t.Day(), t.Year())
 }
 
 // Tuesday October 16, 1996
-func (en *AmericanDateFormatter) Long(t time.Time) string {
+func (en *AmericanDateTimeFormatter) LongDate(t time.Time) string {
 	return fmt.Sprintf("%s %s %d, %d", en.Weekday[t.Weekday()], en.Month[t.Month()], t.Day(), t.Year())
 }
 
-func (en *AmericanDateFormatter) Full(t time.Time) string {
+func (en *AmericanDateTimeFormatter) FullDate(t time.Time) string {
 	// TODO: implement format
 	return fmt.Sprintf("%s %d. %s %d", en.Weekday[t.Weekday()], t.Day(), en.Month[t.Month()], t.Year())
 }
 
-type GermanDateFormatter struct {
+// 3:04 PM
+func (en *AmericanDateTimeFormatter) ShortTime(t time.Time) string {
+	return t.Format("3:04 PM")
+}
+
+// 3:04:05 PM
+func (en *AmericanDateTimeFormatter) MediumTime(t time.Time) string {
+	return t.Format("3:04:05 PM")
+}
+
+// 3:04:05 PM MST
+func (en *AmericanDateTimeFormatter) LongTime(t time.Time) string {
+	return t.Format("3:04:05 PM MST")
+}
+
+// 3:04:05 PM MST - same as long format
+func (en *AmericanDateTimeFormatter) FullTime(t time.Time) string {
+	return t.Format("3:04:05 PM MST")
+}
+
+type GermanDateTimeFormatter struct {
 	Month   map[time.Month]string
 	Weekday map[time.Weekday]string
 }
 
-func createGermanDateFormatter() DateFormatter {
-	return &GermanDateFormatter{
+func createGermanDateTimeFormatter() DateTimeFormatter {
+	return &GermanDateTimeFormatter{
 		Month: map[time.Month]string{
 			time.January:   "Januar",
 			time.February:  "Februar",
@@ -102,46 +126,69 @@ func createGermanDateFormatter() DateFormatter {
 	}
 }
 
-func (de *GermanDateFormatter) Short(t time.Time) string {
+func (de *GermanDateTimeFormatter) ShortDate(t time.Time) string {
 	return fmt.Sprintf("%d.%d.%d", t.Day(), t.Month(), t.Year())
 }
 
-func (de *GermanDateFormatter) Medium(t time.Time) string {
+func (de *GermanDateTimeFormatter) MediumDate(t time.Time) string {
 	return fmt.Sprintf("%d. %s %d", t.Day(), de.Month[t.Month()], t.Year())
 }
 
-func (de *GermanDateFormatter) Long(t time.Time) string {
+func (de *GermanDateTimeFormatter) LongDate(t time.Time) string {
 	return fmt.Sprintf("%s %d. %s %d", de.Weekday[t.Weekday()], t.Day(), de.Month[t.Month()], t.Year())
 }
 
-func (de *GermanDateFormatter) Full(t time.Time) string {
+func (de *GermanDateTimeFormatter) FullDate(t time.Time) string {
 	// TODO: implement format
 	return fmt.Sprintf("%s %d. %s %d", de.Weekday[t.Weekday()], t.Day(), de.Month[t.Month()], t.Year())
 }
 
-type DateExpr struct {
+// 3:04 PM
+func (en *GermanDateTimeFormatter) ShortTime(t time.Time) string {
+	return t.Format("15:04")
+}
+
+// 3:04:05 PM
+func (en *GermanDateTimeFormatter) MediumTime(t time.Time) string {
+	return t.Format("15:04:05")
+}
+
+// 3:04:05 PM MST
+func (en *GermanDateTimeFormatter) LongTime(t time.Time) string {
+	return t.Format("15:04:05 MST")
+}
+
+// 3:04:05 PM MST - same as long format
+func (en *GermanDateTimeFormatter) FullTime(t time.Time) string {
+	return t.Format("15:04:05 MST")
+}
+
+type DateTimeExpr struct {
 	// Key is the key for the data map when this
 	// expression is being formatted.
 	Key string `json:"key"`
+	// The type: date or time
+	Type string `json:"type"`
 	// Format represents the DateFormat enum value
-	Format DateFormat `json:"format"`
+	Format DateTimeFormat `json:"format"`
 }
 
-type DateFormat = string
+type DateTimeFormat = string
 
 const (
-	Short  DateFormat = "short"
-	Medium DateFormat = "medium"
-	Long   DateFormat = "long"
-	Full   DateFormat = "full"
+	Short  DateTimeFormat = "short"
+	Medium DateTimeFormat = "medium"
+	Long   DateTimeFormat = "long"
+	Full   DateTimeFormat = "full"
 	// skeleton represents ICU's datetime skeleton format
 	// Skeleton DateFormat = "skeleton"
 )
 
 // parseDate attempts to parse the input at the given start position into a DateExpr
-func (p *parser) parseDate(varName string, nextChar rune, start, end int, ptr_input *[]rune) (Expression, int, error) {
-	var result = DateExpr{
-		Key: varName,
+func (p *parser) parseDateTime(varName string, ctype string, nextChar rune, start, end int, ptr_input *[]rune) (Expression, int, error) {
+	var result = DateTimeExpr{
+		Key:  varName,
+		Type: ctype,
 	}
 
 	format, _, cursor, err := readVar(start+1, end, ptr_input)
@@ -165,27 +212,44 @@ func (p *parser) parseDate(varName string, nextChar rune, start, end int, ptr_in
 	return &result, cursor, nil
 }
 
-func (f *formatter) formatDate(expr Expression, ptrOutput *bytes.Buffer, data map[string]any) error {
-	if date, ok := expr.(*DateExpr); ok {
+func (f *formatter) formatDateTime(expr Expression, ptrOutput *bytes.Buffer, data map[string]any) error {
+	if date, ok := expr.(*DateTimeExpr); ok {
 		t, ok := data[date.Key].(time.Time)
+		ctype := date.Type
 		if !ok {
 			return fmt.Errorf("InvalidArgType: want time.Time, got %T", t)
 		}
 
 		switch date.Format {
 		case Short:
-			ptrOutput.WriteString(f.date.Short(t))
+			if ctype == "date" {
+				ptrOutput.WriteString(f.date.ShortDate(t))
+			} else {
+				ptrOutput.WriteString(f.date.ShortTime(t))
+			}
 		case Medium:
-			ptrOutput.WriteString(f.date.Medium(t))
+			if ctype == "date" {
+				ptrOutput.WriteString(f.date.MediumDate(t))
+			} else {
+				ptrOutput.WriteString(f.date.MediumTime(t))
+			}
 		case Long:
-			ptrOutput.WriteString(f.date.Long(t))
+			if ctype == "date" {
+				ptrOutput.WriteString(f.date.LongDate(t))
+			} else {
+				ptrOutput.WriteString(f.date.LongTime(t))
+			}
 		case Full:
-			ptrOutput.WriteString(f.date.Full(t))
+			if ctype == "date" {
+				ptrOutput.WriteString(f.date.FullDate(t))
+			} else {
+				ptrOutput.WriteString(f.date.FullTime(t))
+			}
 		default:
 			return fmt.Errorf("InvalidDateFormat")
 		}
 	} else {
-		return fmt.Errorf("InvalidExprType: want DateExpr, got %T", expr)
+		return fmt.Errorf("InvalidExprType: want DateTimeExpr, got %T", expr)
 	}
 
 	return nil

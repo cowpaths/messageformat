@@ -74,7 +74,9 @@ func (x *parser) parseExpression(start, end int, ptr_input *[]rune) (string, Exp
 	case "selectordinal":
 		expr, pos, err = x.parseSelect(varname, char, pos, end, ptr_input)
 	case "date":
-		expr, pos, err = x.parseDate(varname, char, pos, end, ptr_input)
+		fallthrough
+	case "time":
+		expr, pos, err = x.parseDateTime(varname, ctype, char, pos, end, ptr_input)
 	default:
 		return "", nil, pos, fmt.Errorf("UnknownType: `%s`", ctype)
 	}
