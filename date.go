@@ -185,31 +185,38 @@ const (
 )
 
 // parseDate attempts to parse the input at the given start position into a DateExpr
-func (p *parser) parseDateTime(varName string, ctype string, nextChar rune, start, end int, ptr_input *[]rune) (Expression, int, error) {
+func (p *parser) parseDateTime(varName string, ctype string, char rune, start, end int, ptr_input *[]rune) (Expression, int, error) {
 	var result = DateTimeExpr{
-		Key:  varName,
-		Type: ctype,
+		Key:    varName,
+		Type:   ctype,
+		Format: Short,
 	}
 
-	format, _, cursor, err := readVar(start+1, end, ptr_input)
-	if err != nil {
-		return nil, cursor, errors.New("failed to parse date format")
+	pos := start
+
+	if char != CloseChar {
+		format, _, cursor, err := readVar(pos+1, end, ptr_input)
+		if err != nil {
+			return nil, cursor, errors.New("failed to parse date format")
+		}
+
+		switch string(format) {
+		case Short:
+			result.Format = Short
+		case Medium:
+			result.Format = Medium
+		case Long:
+			result.Format = Long
+		case Full:
+			result.Format = Full
+		default:
+			return nil, cursor, fmt.Errorf("InvalidDateFormat")
+		}
+
+		pos = cursor
 	}
 
-	switch string(format) {
-	case Short:
-		result.Format = Short
-	case Medium:
-		result.Format = Medium
-	case Long:
-		result.Format = Long
-	case Full:
-		result.Format = Full
-	default:
-		return nil, cursor, fmt.Errorf("InvalidDateFormat")
-	}
-
-	return &result, cursor, nil
+	return &result, pos, nil
 }
 
 func (f *formatter) formatDateTime(expr Expression, ptrOutput *bytes.Buffer, data map[string]any) error {

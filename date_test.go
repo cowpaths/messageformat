@@ -10,6 +10,12 @@ func TestParseDate(t *testing.T) {
 	dateTime := time.Date(2023, 4, 10, 5, 19, 42, 543, tz)
 
 	doTest(t, Test{
+		"{varname, date}",
+		[]Expectation{
+			{data: map[string]any{"varname": dateTime}, output: "4/10/2023"},
+		},
+	})
+	doTest(t, Test{
 		"{varname, date, short}",
 		[]Expectation{
 			{data: map[string]any{"varname": dateTime}, output: "4/10/2023"},
@@ -39,6 +45,12 @@ func TestParseTime(t *testing.T) {
 	tz, _ := time.LoadLocation("America/New_York")
 	dateTime := time.Date(2023, 4, 10, 5, 19, 42, 543, tz)
 
+	doTest(t, Test{
+		"{varname, time}",
+		[]Expectation{
+			{data: map[string]any{"varname": dateTime}, output: "5:19 AM"},
+		},
+	})
 	doTest(t, Test{
 		"{varname, time, short}",
 		[]Expectation{
