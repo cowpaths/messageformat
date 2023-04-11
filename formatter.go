@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	DefaultCulture = "en"
+	DefaultLocale = language.English
 )
 
 // pluralFunc describes a function used to produce a named key when processing a plural or selectordinal expression.
@@ -24,22 +24,7 @@ type FormatterOption func(f *formatter)
 
 func WithLocale(locale language.Tag) FormatterOption {
 	return func(f *formatter) {
-		switch locale {
-		case language.AmericanEnglish:
-			f.date = createAmericanDateFormatter()
-			f.locale = locale
-		case language.German:
-			f.date = createGermanDateFormatter()
-			f.locale = locale
-		}
-	}
-}
-
-// TODO(tylermorton): replace this logic to use WithLocale
-// WithCulture applies the plurality culture to the formatter
-func WithCulture(culture string) FormatterOption {
-	return func(f *formatter) {
-		f.SetCulture(culture)
+		f.SetLocale(locale)
 	}
 }
 
@@ -51,8 +36,8 @@ func NewFormatter(opts ...FormatterOption) (Formatter, error) {
 		opt(&f)
 	}
 
-	if f.plural == nil {
-		err := f.SetCulture(DefaultCulture)
+	if f.locale == language.Und {
+		err := f.SetLocale(DefaultLocale)
 		if err != nil {
 			return nil, err
 		}
@@ -62,22 +47,35 @@ func NewFormatter(opts ...FormatterOption) (Formatter, error) {
 }
 
 type formatter struct {
-	date DateFormatter
-
-	// the locale this formatter is configured to
-	// output as. this is used for dates and times
 	locale language.Tag
-	// TODO: replace this with locale-specific logic
 	plural pluralFunc
+	date   DateTimeFormatter
 }
 
-func (x *formatter) SetCulture(name string) error {
-	fn, err := plural.GetFunc(name)
-	if nil != err {
-		return err
+func (x *formatter) SetLocale(tag language.Tag) error {
+	x.locale = tag
+
+	switch tag {
+	case language.AmericanEnglish:
+		x.date = createAmericanDateTimeFormatter()
+	case language.German:
+		x.date = createGermanDateTimeFormatter()
+	default:
+		x.date = createAmericanDateTimeFormatter()
 	}
 
-	x.plural = fn
+	if x.plural == nil {
+		culture := tag
+		for culture != language.Und {
+			fn, err := plural.GetFunc(culture.String())
+			if err == nil {
+				x.plural = fn
+				break
+			}
+			culture = culture.Parent()
+		}
+	}
+
 	return nil
 }
 
@@ -109,7 +107,9 @@ func (f *formatter) format(n *ParseTree, buf *bytes.Buffer, data map[string]any,
 	err := n.ForEach(func(n *Node) error {
 		switch n.Type {
 		case "date":
-			return f.formatDate(n.Expr, buf, data)
+			fallthrough
+		case "time":
+			return f.formatDateTime(n.Expr, buf, data)
 		case "literal":
 			return f.formatLiteral(n.Expr, buf, value)
 		case "plural":
@@ -118,10 +118,10 @@ func (f *formatter) format(n *ParseTree, buf *bytes.Buffer, data map[string]any,
 			return f.formatSelect(n.Expr, buf, data)
 		case "selectordinal":
 			return f.formatOrdinal(n.Expr, buf, data)
-		case "time":
-			return fmt.Errorf("formatter not implemented for time")
 		case "var":
 			return f.formatVar(n.Expr, buf, data)
+		case "number":
+			return f.formatNumber(n.Expr, buf, data)
 		default:
 			return fmt.Errorf("formatter not implemented for expression of type %s", n.Type)
 		}
