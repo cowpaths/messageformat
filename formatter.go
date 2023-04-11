@@ -120,6 +120,8 @@ func (f *formatter) format(n *ParseTree, buf *bytes.Buffer, data map[string]any,
 			return f.formatOrdinal(n.Expr, buf, data)
 		case "var":
 			return f.formatVar(n.Expr, buf, data)
+		case "number":
+			return f.formatNumber(n.Expr, buf, data)
 		default:
 			return fmt.Errorf("formatter not implemented for expression of type %s", n.Type)
 		}
