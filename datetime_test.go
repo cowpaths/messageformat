@@ -58,6 +58,12 @@ func TestParseTime(t *testing.T) {
 		},
 	})
 	doTest(t, Test{
+		"{varname, time, shorttz}",
+		[]Expectation{
+			{data: map[string]any{"varname": dateTime}, output: "5:19 AM EDT"},
+		},
+	})
+	doTest(t, Test{
 		"{varname, time, medium}",
 		[]Expectation{
 			{data: map[string]any{"varname": dateTime}, output: "5:19:42 AM"},

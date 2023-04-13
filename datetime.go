@@ -15,6 +15,7 @@ type DateTimeFormatter interface {
 	LongDate(time.Time) string
 	FullDate(time.Time) string
 	ShortTime(time.Time) string
+	ShortTzTime(time.Time) string
 	MediumTime(time.Time) string
 	LongTime(time.Time) string
 	FullTime(time.Time) string
@@ -76,6 +77,11 @@ func (en *AmericanDateTimeFormatter) FullDate(t time.Time) string {
 // 3:04 PM
 func (en *AmericanDateTimeFormatter) ShortTime(t time.Time) string {
 	return t.Format("3:04 PM")
+}
+
+// 3:04 PM MST
+func (en *AmericanDateTimeFormatter) ShortTzTime(t time.Time) string {
+	return t.Format("3:04 PM MST")
 }
 
 // 3:04:05 PM
@@ -148,6 +154,11 @@ func (en *GermanDateTimeFormatter) ShortTime(t time.Time) string {
 	return t.Format("15:04")
 }
 
+// 3:04 PM
+func (en *GermanDateTimeFormatter) ShortTzTime(t time.Time) string {
+	return t.Format("15:04 MST")
+}
+
 // 3:04:05 PM
 func (en *GermanDateTimeFormatter) MediumTime(t time.Time) string {
 	return t.Format("15:04:05")
@@ -176,10 +187,11 @@ type DateTimeExpr struct {
 type DateTimeFormat = string
 
 const (
-	Short  DateTimeFormat = "short"
-	Medium DateTimeFormat = "medium"
-	Long   DateTimeFormat = "long"
-	Full   DateTimeFormat = "full"
+	Short   DateTimeFormat = "short"
+	ShortTz DateTimeFormat = "shorttz"
+	Medium  DateTimeFormat = "medium"
+	Long    DateTimeFormat = "long"
+	Full    DateTimeFormat = "full"
 	// skeleton represents ICU's datetime skeleton format
 	// Skeleton DateFormat = "skeleton"
 )
@@ -203,6 +215,8 @@ func (p *parser) parseDateTime(varName string, ctype string, char rune, start, e
 		switch string(format) {
 		case Short:
 			result.Format = Short
+		case ShortTz:
+			result.Format = ShortTz
 		case Medium:
 			result.Format = Medium
 		case Long:
@@ -233,6 +247,12 @@ func (f *formatter) formatDateTime(expr Expression, ptrOutput *bytes.Buffer, dat
 				ptrOutput.WriteString(f.date.ShortDate(t))
 			} else {
 				ptrOutput.WriteString(f.date.ShortTime(t))
+			}
+		case ShortTz:
+			if ctype == "date" {
+				return fmt.Errorf("InvalidDateFormat")
+			} else {
+				ptrOutput.WriteString(f.date.ShortTzTime(t))
 			}
 		case Medium:
 			if ctype == "date" {
